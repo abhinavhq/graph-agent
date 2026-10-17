@@ -1,0 +1,9 @@
+﻿kuzu>=0.6.0
+langgraph>=0.2.0
+langchain-anthropic>=0.1.0
+langchain-core>=0.3.0
+mcp>=1.0.0
+streamlit>=1.40.0
+pyvis>=0.3.2
+python-dotenv>=1.0.0
+networkx>=3.3

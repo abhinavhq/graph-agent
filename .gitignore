@@ -1,0 +1,15 @@
+﻿__pycache__/
+*.pyc
+.env
+*.db
+*.duckdb
+*.wal
+.streamlit/secrets.toml
+venv/
+.venv/
+review_queue.jsonl
+graph_trace.html
+.agents/
+.claude/
+graph_trace.html
+review_queue.jsonl
