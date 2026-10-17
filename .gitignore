@@ -13,3 +13,6 @@ graph_trace.html
 .claude/
 graph_trace.html
 review_queue.jsonl
+lib/
+test_mcp.py
+
