@@ -1,10 +1,11 @@
-﻿"""Investigation agent. Talks to the MCP server over stdio via raw JSON-RPC.
+"""Investigation agent. Talks to the MCP server over stdio via raw JSON-RPC.
 
 Uses a local Ollama model. No API key needed.
 """
 
 import os
 import sys
+import re
 import json
 import asyncio
 from typing import TypedDict
@@ -86,7 +87,7 @@ class MCPClient:
 
 
 def _extract_trace(result_text, trace):
-    """Parse Kuzu find_paths / get_neighbors output into hop triples."""
+    """Parse FalkorDB output (and fallback to Kuzu) into hop triples."""
     try:
         data = json.loads(result_text)
     except (json.JSONDecodeError, TypeError):
@@ -94,26 +95,40 @@ def _extract_trace(result_text, trace):
     if not isinstance(data, list):
         return
 
+    def get_id(node_str):
+        if isinstance(node_str, dict):
+            return node_str.get("id") or node_str.get("_label", "?")
+        # FalkorDB string format: '(:Person{id:"p5",...})'
+        match = re.search(r'id:\\?"([^"\\]+)\\?"', str(node_str))
+        return match.group(1) if match else str(node_str)[:10]
+
+    def get_rel(rel_str):
+        if isinstance(rel_str, dict):
+            return rel_str.get("_label", "edge")
+        # FalkorDB string format: '()-[:SENT{...}]->()'
+        match = re.search(r'\[:([A-Z_]+)', str(rel_str))
+        return match.group(1) if match else "edge"
+
     def walk(node):
         if not isinstance(node, list):
             return
-        # [nodes_list, rels_list]  (Kuzu find_paths shape)
+        # Kuzu shape: [nodes_list, rels_list]
         if len(node) == 2 and isinstance(node[0], list) and isinstance(node[1], list):
             nodes, rels = node
             if nodes and rels and isinstance(nodes[0], dict) and isinstance(rels[0], dict):
                 for i in range(len(nodes) - 1):
-                    src_id = nodes[i].get("id") or nodes[i].get("_label", "?")
-                    dst_id = nodes[i + 1].get("id") or nodes[i + 1].get("_label", "?")
-                    rel_label = rels[i].get("_label", "edge") if i < len(rels) else "edge"
+                    src_id = get_id(nodes[i])
+                    dst_id = get_id(nodes[i + 1])
+                    rel_label = get_rel(rels[i]) if i < len(rels) else "edge"
                     trace.append([str(src_id), str(rel_label), str(dst_id)])
                 return
-        # [src, rel, tgt]  (single hop)
-        if len(node) == 3 and all(isinstance(x, dict) for x in node):
-            src, rel, tgt = node
-            sid = src.get("id") or src.get("_label", "?")
-            tid = tgt.get("id") or tgt.get("_label", "?")
-            rname = rel.get("_label", "edge")
-            trace.append([str(sid), str(rname), str(tid)])
+        # FalkorDB shape: [src_str, rel_str, tgt_str]
+        if len(node) == 3 and all(isinstance(x, str) for x in node):
+            src_id = get_id(node[0])
+            rel_label = get_rel(node[1])
+            dst_id = get_id(node[2])
+            if src_id and dst_id and src_id != dst_id:
+                trace.append([str(src_id), str(rel_label), str(dst_id)])
             return
         for item in node:
             walk(item)
