@@ -1,4 +1,4 @@
-# Graph Fraud Investigation Agent 
+# Graph Fraud Investigation Agent
 
 
 **Track 01 — Agents That Act on Connected Data**
