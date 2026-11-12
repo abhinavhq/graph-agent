@@ -18,14 +18,14 @@ No API keys are required — this runs 100% locally using Ollama.
 > "Find paths from a4 to a7 within 4 hops. Then list high risk actors above 0.7 and flag the highest-risk one for review."
 
 **What happens:**
-1. The agent queries the graph to find paths between two accounts.
+1. The agent queries the graph to find paths between two accounts
 2. It discovers a circular flow: `a4 → SENT → a2 → SENT → a7`.
 3. It lists high-risk actors and identifies `p5` (Eva Petrov) as connected to the flow.
 4. It flags `p5` for review, writing the exact reasoning to `review_queue.jsonl`.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture 
 
 ```text
 User Query (Streamlit UI / CLI)
